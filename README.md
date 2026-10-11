@@ -103,7 +103,9 @@ Deploying needs an AWS account with Bedrock access to the model in `infra/cdk.js
 
 1. `npx cdk deploy --all` (set `githubOidcProviderArn` in `cdk.json` if the account already has a
    GitHub OIDC provider, and `alertEmail` for budget emails).
-2. `python3 scripts/create_github_app.py --webhook-url <WebhookUrl output>`, then install the app on
+2. `python3 scripts/register_github_app.py open --webhook-url <WebhookUrl output>`: paste the secret
+   from the clipboard, create the app and generate a private key. Then
+   `python3 scripts/register_github_app.py store --app-id <id> --pem <file>` and install the app on
    the two demo repos.
 3. `scripts/configure_demo_repos.sh` to set repo variables, labels and branch protection.
 
