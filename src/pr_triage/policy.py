@@ -70,7 +70,12 @@ def tripwire(texts: list[str], patterns: list[str]) -> list[str]:
         regex = re.compile(pattern, re.I)
         for text in texts:
             if match := regex.search(text or ""):
-                quotes.append(match.group(0)[:80])
+                end = match.end()
+                while end < len(text) and text[end].isalnum():  # finish the last word ("pre-approved")
+                    end += 1
+                quote = text[match.start() : end]
+                if quote not in quotes:
+                    quotes.append(quote[:80])
                 break
     return quotes
 
