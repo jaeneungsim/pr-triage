@@ -14,6 +14,8 @@ const platform = new PreviewPlatformStack(app, 'PrTriagePreviewPlatform', {
   stackName: 'pr-triage-preview-platform',
   description: 'Isolation for demo app previews: GitHub OIDC roles, a CloudFormation role and a permissions boundary',
   githubOwner: ctx<string>('githubOwner'),
+  githubOwnerId: optional('githubOwnerId'),
+  githubRepoIds: app.node.tryGetContext('githubRepoIds'),
   githubOidcProviderArn: optional('githubOidcProviderArn'),
 });
 

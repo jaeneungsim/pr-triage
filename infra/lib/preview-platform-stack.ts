@@ -8,8 +8,19 @@ import { GITHUB_OIDC_URL, NAMES } from './names';
 
 export interface PreviewPlatformProps extends StackProps {
   readonly githubOwner: string;
+  /**
+   * GitHub's numeric owner and repo ids. Newer repos get OIDC subjects such as
+   * `repo:owner@123/name@456:ref:refs/heads/dev`; with the ids, a renamed or re-created repo
+   * of the same name cannot assume the roles. Without them the old name-only subject is used.
+   */
+  readonly githubOwnerId?: string;
+  readonly githubRepoIds?: Record<string, string>;
   /** Reuse the account's GitHub OIDC provider when it already exists (one per account). */
   readonly githubOidcProviderArn?: string;
+}
+
+export function githubSubject(owner: string, repo: string, subject: string, ownerId?: string, repoId?: string): string {
+  return ownerId && repoId ? `repo:${owner}@${ownerId}/${repo}@${repoId}:${subject}` : `repo:${owner}/${repo}:${subject}`;
 }
 
 const CFN_DEPLOY_ACTIONS = [
@@ -203,7 +214,9 @@ export class PreviewPlatformStack extends Stack {
         assumedBy: new iam.WebIdentityPrincipal(providerArn, {
           StringEquals: {
             [`${GITHUB_OIDC_URL}:aud`]: 'sts.amazonaws.com',
-            [`${GITHUB_OIDC_URL}:sub`]: `repo:${props.githubOwner}/${repo}:${subject}`,
+            [`${GITHUB_OIDC_URL}:sub`]: githubSubject(
+              props.githubOwner, repo, subject, props.githubOwnerId, props.githubRepoIds?.[repo],
+            ),
           },
         }),
       });

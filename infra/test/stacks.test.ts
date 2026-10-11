@@ -2,7 +2,7 @@ import { App } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { CoreStack } from '../lib/core-stack';
-import { PreviewPlatformStack } from '../lib/preview-platform-stack';
+import { githubSubject, PreviewPlatformStack } from '../lib/preview-platform-stack';
 
 const env = { account: '111111111111', region: 'ap-southeast-2' };
 
@@ -161,6 +161,30 @@ describe('core', () => {
     });
     core.hasResourceProperties('AWS::DynamoDB::Table', {
       TimeToLiveSpecification: { AttributeName: 'ttl', Enabled: true },
+    });
+  });
+});
+
+describe('GitHub OIDC subjects', () => {
+  test('use immutable owner and repo ids when they are known', () => {
+    expect(githubSubject('octo', 'demo-inventory-api', 'ref:refs/heads/dev', '13', '99')).toBe(
+      'repo:octo@13/demo-inventory-api@99:ref:refs/heads/dev',
+    );
+    expect(githubSubject('octo', 'demo-inventory-api', 'pull_request')).toBe('repo:octo/demo-inventory-api:pull_request');
+  });
+
+  test('the roles trust the id-based subject', () => {
+    const app = new App();
+    const stack = new PreviewPlatformStack(app, 'WithIds', {
+      env, githubOwner: 'octo', githubOwnerId: '13', githubRepoIds: { 'demo-inventory-api': '99', 'demo-inventory-web': '98' },
+    });
+    Template.fromStack(stack).hasResourceProperties('AWS::IAM::Role', {
+      RoleName: 'inv-gha-preview-web',
+      AssumeRolePolicyDocument: {
+        Statement: [Match.objectLike({
+          Condition: { StringEquals: Match.objectLike({ 'token.actions.githubusercontent.com:sub': 'repo:octo@13/demo-inventory-web@98:pull_request' }) },
+        })],
+      },
     });
   });
 });

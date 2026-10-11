@@ -18,6 +18,11 @@
   },
   "context": {
     "githubOwner": "jaeneungsim",
+    "githubOwnerId": "13538359",
+    "githubRepoIds": {
+      "demo-inventory-api": "1414087927",
+      "demo-inventory-web": "1414087988"
+    },
     "managedRepos": [
       "demo-inventory-api",
       "demo-inventory-web"

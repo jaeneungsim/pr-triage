@@ -234,14 +234,16 @@ Skipped jobs end as `skipped`, which pr-triage treats as "not blocking".
 | `WEB_PREVIEW_DOMAIN` | (not used) | the CloudFront domain, for example `d123.cloudfront.net` |
 | `TRIAGE_LEVEL` | `v3` | `v3` |
 
-GitHub OIDC trust (the `sub` claim):
+GitHub OIDC trust (the `sub` claim). Newer repos put the numeric owner and repo ids in the subject,
+so a renamed or re-created repo with the same name does not match. The ids are in `infra/cdk.json`
+(`githubOwnerId`, `githubRepoIds`); without them the stack falls back to the name-only subject.
 
 | Role | Trusted `sub` |
 |---|---|
-| `inv-gha-preview-api` | `repo:<owner>/demo-inventory-api:pull_request` |
-| `inv-gha-dev-api` | `repo:<owner>/demo-inventory-api:ref:refs/heads/dev` |
-| `inv-gha-preview-web` | `repo:<owner>/demo-inventory-web:pull_request` |
-| `inv-gha-dev-web` | `repo:<owner>/demo-inventory-web:ref:refs/heads/dev` |
+| `inv-gha-preview-api` | `repo:<owner>@<owner id>/demo-inventory-api@<repo id>:pull_request` |
+| `inv-gha-dev-api` | `repo:<owner>@<owner id>/demo-inventory-api@<repo id>:ref:refs/heads/dev` |
+| `inv-gha-preview-web` | `repo:<owner>@<owner id>/demo-inventory-web@<repo id>:pull_request` |
+| `inv-gha-dev-web` | `repo:<owner>@<owner id>/demo-inventory-web@<repo id>:ref:refs/heads/dev` |
 
 Fork PRs cannot get an OIDC token, and every deploy job also checks
 `github.event.pull_request.head.repo.full_name == github.repository`.
