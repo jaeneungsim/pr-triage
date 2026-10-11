@@ -18,7 +18,7 @@ function build() {
     webPreviewBucketName: platform.webPreviewBucket.bucketName,
     level: 'v3',
     mode: 'advisory',
-    modelId: 'global.anthropic.claude-haiku-4-5-20251001-v1:0',
+    modelId: 'au.anthropic.claude-haiku-5-5',
     modelInputUsdPerMTok: 1,
     modelOutputUsdPerMTok: 5,
     allowedAuthors: ['octo'],
@@ -128,8 +128,8 @@ describe('core', () => {
       }
     }
     const statement = policyStatements(core, 'ReviewServiceRole').find((s) => s.Sid === 'OnlyTheReviewModel');
-    expect(JSON.stringify(statement?.Resource)).toContain('foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0');
-    expect(JSON.stringify(statement?.Resource)).toContain('inference-profile/global.anthropic.claude-haiku-4-5-20251001-v1:0');
+    expect(JSON.stringify(statement?.Resource)).toContain('foundation-model/anthropic.claude-haiku-5-5');
+    expect(JSON.stringify(statement?.Resource)).toContain('inference-profile/au.anthropic.claude-haiku-5-5');
   });
 
   test('the workflow waits for CI with a task token and a time limit', () => {

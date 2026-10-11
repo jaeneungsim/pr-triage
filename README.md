@@ -68,7 +68,8 @@ For a real organization, a separate preview account is still the stronger choice
 
 ## Cost
 
-The default model is Claude Haiku. The app counts the cost of every call from the token usage
+The default model is Claude Haiku 5.5 through the Australian inference profile, so requests stay in
+Australian regions. The app counts the cost of every call from the token usage
 Bedrock returns, reserves the worst case before calling, and stops at a daily review count and a
 monthly AI budget (both in SSM). AWS Budgets is the backstop: it warns at $5 and switches AI reviews
 off at $8. Hitting any limit sends the PR to a person; it never turns into an approval. Everything

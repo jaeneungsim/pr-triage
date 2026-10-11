@@ -32,6 +32,7 @@ def test_files_are_dropped_before_the_budget_is_exceeded(doc):
 
 def test_model_name():
     assert render.model_name("global.anthropic.claude-haiku-4-5-20251001-v1:0") == "Claude Haiku 4.5"
+    assert render.model_name("au.anthropic.claude-haiku-5-5") == "Claude Haiku 5.5"
     assert render.model_name("anthropic.claude-3-5-haiku-20241022-v1:0") == "Claude Haiku 3.5"
     assert render.model_name("amazon.nova-lite-v1:0") == "amazon.nova-lite-v1:0"
 
