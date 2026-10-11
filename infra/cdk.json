@@ -35,8 +35,6 @@
     "monthlyAiUsd": 5,
     "budgetWarnUsd": 5,
     "budgetStopUsd": 8,
-    "alertEmail": "",
-    "githubOidcProviderArn": "",
     "@aws-cdk-containers/ecs-service-extensions:enableDefaultLogDriver": true,
     "@aws-cdk/aws-apigateway:authorizerChangeDeploymentLogicalId": true,
     "@aws-cdk/aws-apigateway:disableCloudWatchRole": true,

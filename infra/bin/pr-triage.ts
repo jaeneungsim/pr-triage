@@ -5,6 +5,8 @@ import { PreviewPlatformStack } from '../lib/preview-platform-stack';
 
 const app = new cdk.App();
 const ctx = <T>(key: string): T => app.node.getContext(key) as T;
+// Account-specific values live in cdk.context.json, which is not committed.
+const optional = (key: string): string | undefined => app.node.tryGetContext(key) || undefined;
 const env = { account: process.env.CDK_DEFAULT_ACCOUNT, region: 'ap-southeast-2' };
 
 const platform = new PreviewPlatformStack(app, 'PrTriagePreviewPlatform', {
@@ -12,7 +14,7 @@ const platform = new PreviewPlatformStack(app, 'PrTriagePreviewPlatform', {
   stackName: 'pr-triage-preview-platform',
   description: 'Isolation for demo app previews: GitHub OIDC roles, a CloudFormation role and a permissions boundary',
   githubOwner: ctx<string>('githubOwner'),
-  githubOidcProviderArn: ctx<string>('githubOidcProviderArn') || undefined,
+  githubOidcProviderArn: optional('githubOidcProviderArn'),
 });
 
 new CoreStack(app, 'PrTriageCore', {
@@ -34,7 +36,7 @@ new CoreStack(app, 'PrTriageCore', {
   monthlyAiUsd: ctx<number>('monthlyAiUsd'),
   budgetWarnUsd: ctx<number>('budgetWarnUsd'),
   budgetStopUsd: ctx<number>('budgetStopUsd'),
-  alertEmail: ctx<string>('alertEmail') || undefined,
+  alertEmail: optional('alertEmail'),
 });
 
 cdk.Tags.of(app).add('project', 'pr-triage');
