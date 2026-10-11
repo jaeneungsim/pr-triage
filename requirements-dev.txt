@@ -1,0 +1,4 @@
+-r requirements.txt
+boto3>=1.40
+pytest>=8.3
+ruff>=0.13

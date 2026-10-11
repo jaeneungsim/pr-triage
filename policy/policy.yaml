@@ -1,0 +1,72 @@
+# Review policy. It is deployed with the code, so a change to it is itself a reviewed PR.
+# Numbers that change often (level, mode, AI limits) live in SSM, not here.
+version: 1
+
+ticket:
+  prefix: INV
+  repo: demo-inventory-api
+  dir: tickets
+
+repos:
+  demo-inventory-api:
+    kind: api
+    openapi: openapi.yaml
+    required_workflows:
+      v1: [ci]
+      v2: [ci, test-relevance, behavior]
+      v3: [ci, test-relevance, behavior, preview-deploy]
+    # Workflows that read the PR description and therefore run again when it is edited.
+    rerun_on_edit: [test-relevance, behavior]
+  demo-inventory-web:
+    kind: web
+    required_workflows:
+      v1: [ci]
+      v2: [ci]
+      v3: [ci, web-preview]
+    rerun_on_edit: []
+
+# A person reviews any PR that touches these paths. Tickets are here so a PR cannot
+# rewrite its own requirements; CI, infrastructure and agent rules decide what runs.
+sensitive_paths:
+  - ".github/**"
+  - ".githooks/**"
+  - "infra/**"
+  - "tickets/**"
+  - "scripts/**"   # the check scripts CI runs
+  - "seed/**"      # the data previews start with
+  - "AGENTS.md"
+  - "**/auth/**"
+  - "**/*auth*.py"
+  - "**/migrations/**"
+
+size:
+  max_changed_lines: 2000
+  max_files: 50
+
+categories:
+  docs_only: ["**/*.md", "docs/**"]
+  tests_only: ["tests/**"]
+
+expected_behavior:
+  # Types that may leave the expected-behavior block empty.
+  optional_for_types: [docs, tests, refactor]
+
+ai:
+  # An "approve" suggestion below this confidence becomes "needs human review".
+  min_confidence: 0.8
+  fork_label: ai-review-ok
+
+auto_approve:
+  categories: [docs_only, tests_only]
+  min_confidence: 0.8
+  target_branches: [dev]
+
+# Text aimed at the reviewer. Matching is a tripwire, not the defence: it can be evaded
+# by rewording. The defence is that the AI only suggests and code decides.
+injection_tripwire:
+  - '\b(?:ai|llm|bot|automated)[ -]?review(?:er|ers)?\b[^\n]{0,120}?\b(?:approve|approval|lgtm|pass)'
+  - '\bignore\s+(?:all\s+|any\s+)?(?:the\s+)?(?:previous|prior|above|earlier)\s+(?:instructions|rules|prompts?)'
+  - '\b(?:approve|merge)\s+this\s+(?:pr|pull\s+request|change)\b'
+  - '\bpre-?approved\b'
+  - '\bsystem\s+prompt\b'
+  - '\byou\s+are\s+now\b'

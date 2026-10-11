@@ -1,0 +1,98 @@
+{
+  "type": "object",
+  "required": [
+    "suggestion",
+    "confidence",
+    "summary",
+    "findings",
+    "behavior_coverage",
+    "ticket_alignment",
+    "cross_repo_issues",
+    "verification_steps"
+  ],
+  "properties": {
+    "suggestion": {
+      "type": "string",
+      "enum": ["approve", "changes_requested", "needs_human"]
+    },
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "summary": {"type": "string", "maxLength": 600},
+    "findings": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["severity", "category", "file", "line", "title", "evidence"],
+        "properties": {
+          "severity": {"type": "string", "enum": ["high", "medium", "low"]},
+          "category": {
+            "type": "string",
+            "enum": [
+              "bug",
+              "security",
+              "prompt_injection",
+              "requirements",
+              "tests",
+              "compatibility",
+              "other"
+            ]
+          },
+          "file": {"type": "string"},
+          "line": {"type": "integer", "minimum": 1},
+          "title": {"type": "string", "maxLength": 160},
+          "evidence": {"type": "string", "maxLength": 400},
+          "fix": {"type": "string", "maxLength": 400}
+        }
+      }
+    },
+    "behavior_coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status"],
+        "properties": {
+          "id": {"type": "string"},
+          "status": {"type": "string", "enum": ["implemented", "missing", "contradicted"]},
+          "note": {"type": "string", "maxLength": 300}
+        }
+      }
+    },
+    "ticket_alignment": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["requirement", "status"],
+        "properties": {
+          "requirement": {"type": "string"},
+          "status": {"type": "string", "enum": ["met", "partial", "not_met", "not_applicable"]},
+          "note": {"type": "string", "maxLength": 300}
+        }
+      }
+    },
+    "cross_repo_issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["description"],
+        "properties": {
+          "description": {"type": "string", "maxLength": 400},
+          "repos": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "verification_steps": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": ["kind", "action", "expected"],
+        "properties": {
+          "kind": {"type": "string", "enum": ["ui", "api", "log"]},
+          "action": {"type": "string", "maxLength": 300},
+          "expected": {"type": "string", "maxLength": 300},
+          "evidence": {"type": "string", "maxLength": 200}
+        }
+      }
+    }
+  }
+}

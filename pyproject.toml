@@ -1,0 +1,19 @@
+[project]
+name = "pr-triage"
+version = "0.1.0"
+description = "AI-first pull request triage: cheap checks first, the AI suggests, code decides."
+requires-python = ">=3.13"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+src = ["src", "tests", "scripts"]
+extend-exclude = ["infra"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["RUF001"]  # typographic characters in user-facing text are intended
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
