@@ -151,7 +151,10 @@ export class PreviewPlatformStack extends Stack {
             }),
             new iam.PolicyStatement({
               sid: 'HttpApis',
-              actions: ['apigateway:GET', 'apigateway:POST', 'apigateway:PUT', 'apigateway:PATCH', 'apigateway:DELETE'],
+              actions: [
+                'apigateway:GET', 'apigateway:POST', 'apigateway:PUT', 'apigateway:PATCH', 'apigateway:DELETE',
+                'apigateway:TagResource', 'apigateway:UntagResource',
+              ],
               resources: [
                 `arn:${partition}:apigateway:${region}::/apis`,
                 `arn:${partition}:apigateway:${region}::/apis/*`,
