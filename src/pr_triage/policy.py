@@ -157,6 +157,9 @@ def evaluate(ctx: dict[str, Any], policy: dict[str, Any], allowed_authors: tuple
         "category": category,
         "coverage": coverage,
         "changed_lines": changed,
+        # For the auto-approve rules in decide.py.
+        "ticket_repos": list(ticket["repos"]) if ticket else [],
+        "expected_types": sorted({item.get("type") for item in expected["items"]}),
     }
 
 

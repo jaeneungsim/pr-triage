@@ -56,8 +56,11 @@ def decide(state: dict[str, Any], policy: dict[str, Any], mode: str) -> dict[str
         hits.append(_hit("ai_missing", HUMAN, "There is no AI review result.", "decide"))
 
     decision = final(hits)
-    auto = decision == APPROVABLE and mode == "auto-approve" and result is not None and _auto_ok(state, policy, result)
-    return {"decision": decision, "hits": hits, "notes": notes, "auto_approve": auto}
+    auto, why_not = False, None
+    if decision == APPROVABLE and mode == "auto-approve" and result is not None:
+        why_not = auto_blocker(state, policy, result)
+        auto = why_not is None
+    return {"decision": decision, "hits": hits, "notes": notes, "auto_approve": auto, "auto_blocker": why_not}
 
 
 def _ai_hits(result: dict[str, Any], policy: dict[str, Any]) -> list[dict[str, str]]:
@@ -87,12 +90,43 @@ def _ai_hits(result: dict[str, Any], policy: dict[str, Any]) -> list[dict[str, s
     return []
 
 
-def _auto_ok(state: dict[str, Any], policy: dict[str, Any], result: dict[str, Any]) -> bool:
+def auto_blocker(state: dict[str, Any], policy: dict[str, Any], result: dict[str, Any]) -> str | None:
+    """Why an approvable PR still waits for a person in auto-approve mode, or None if it does not.
+
+    Code approves only what it can vouch for: docs and tests on their own, and code changes
+    whose expected behavior actually ran and passed. The AI's approval is necessary, never enough.
+    """
     ctx, gate = state["ctx"], state["policy"]
     rules = policy["auto_approve"]
-    return (
-        gate["category"] in rules["categories"]
-        and float(result["confidence"]) >= rules["min_confidence"]
-        and not ctx["fork"]
-        and ctx["base_ref"] in rules["target_branches"]
-    )
+    if ctx["fork"]:
+        return "it comes from a fork"
+    if ctx["base_ref"] not in rules["target_branches"]:
+        return f"it targets {ctx['base_ref']}; only {', '.join(rules['target_branches'])} merges on its own"
+    if gate["category"] not in rules["categories"]:
+        return f"{gate['category']} changes are not auto-approved"
+    if float(result["confidence"]) < rules["min_confidence"]:
+        return f"the AI confidence is below {rules['min_confidence']}"
+    if gate["category"] != "code":
+        return None
+    repo_name = ctx["repo"].rsplit("/", 1)[-1]
+    if gate.get("ticket_repos") != [repo_name]:
+        return "the ticket spans several repos, so a person merges the parts together"
+    if "ui" in gate.get("expected_types", []):
+        return "the expected behavior has UI steps that a person has to look at"
+    return _evidence_gap(state.get("checks") or {}, ctx["level"])
+
+
+def _evidence_gap(checks: dict[str, Any], level: str) -> str | None:
+    """None if the expected behavior ran and passed: in CI from v2, and on the AWS preview at v3."""
+    if level == "v1":
+        return "v1 does not run the code"
+    if (checks.get("test_relevance") or {}).get("verdict") != "ok":
+        return "the new tests were not shown to fail on the old code"
+    ci = checks.get("behavior_ci") or {}
+    if not (ci.get("passed") and any(i.get("ok") for i in ci.get("items", []))):
+        return "the expected behavior did not run in CI"
+    if level == "v3":
+        items = (checks.get("behavior_preview") or {}).get("items", [])
+        if not any(i.get("ok") for i in items) or any(i.get("ok") is False for i in items):
+            return "the expected behavior did not run on the AWS preview"
+    return None

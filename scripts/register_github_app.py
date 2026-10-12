@@ -33,7 +33,7 @@ PERMISSIONS = {
     "pull_requests": "write",  # labels and the summary comment
     "checks": "write",  # the pr-triage check run on each commit
     "issues": "write",  # the morning digest issue
-    "contents": "read",  # tickets, changed files, openapi.yaml
+    "contents": "write",  # read tickets, files and openapi.yaml; merge in auto-approve mode
     "actions": "read",  # workflow results and their artifacts
     "metadata": "read",
 }

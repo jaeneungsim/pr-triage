@@ -141,6 +141,19 @@ def approve(c: GitHubClient, repo: str, number: int, sha: str, body: str) -> Non
     c.post(f"/repos/{repo}/pulls/{number}/reviews", {"commit_id": sha, "event": "APPROVE", "body": body})
 
 
+def merge(c: GitHubClient, repo: str, pr: dict[str, Any], sha: str, method: str) -> dict[str, Any]:
+    """Merge only if the head is still `sha`, so a newer commit is never merged unreviewed."""
+    return c.put(
+        f"/repos/{repo}/pulls/{pr['number']}/merge",
+        {
+            "sha": sha,
+            "merge_method": method,
+            "commit_title": f"{pr['title']} (#{pr['number']})",
+            "commit_message": pr.get("body") or "",
+        },
+    )
+
+
 def workflow_runs(c: GitHubClient, repo: str, sha: str) -> list[dict[str, Any]]:
     return c.paginate(f"/repos/{repo}/actions/runs", {"head_sha": sha}, key="workflow_runs", max_pages=3)
 

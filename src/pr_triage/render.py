@@ -35,16 +35,13 @@ def title(decision: dict[str, Any]) -> str:
     return TITLES[decision["decision"]]
 
 
-def summary(state: dict[str, Any], doc: dict[str, Any], *, approved: bool = False) -> str:
+def summary(
+    state: dict[str, Any], doc: dict[str, Any], *, approved: bool = False, merge: dict[str, Any] | None = None
+) -> str:
     ctx, decision = state["ctx"], state["decision"]
     outcome = decision["decision"]
     sha7 = ctx["sha"][:7]
-    if approved:
-        mode = "Auto-approved: docs or tests only, and every check passed."
-    elif ctx.get("mode") == "auto-approve":
-        mode = "Auto-approve mode (docs and tests only); everything else waits for a person."
-    else:
-        mode = "Advisory mode: a person approves and merges."
+    mode = _mode(ctx, decision, approved, merge)
     parts = [
         COMMENT_MARKER,
         f"### pr-triage: {ICONS[outcome]} {TITLES[outcome]}",
@@ -65,6 +62,42 @@ def summary(state: dict[str, Any], doc: dict[str, Any], *, approved: bool = Fals
         "The AI suggests and code decides, using policy.yaml in pr-triage.</sub>",
     ]
     return "\n\n".join(p for p in parts if p)
+
+
+def _mode(ctx: dict[str, Any], decision: dict[str, Any], approved: bool, merge: dict[str, Any] | None) -> str:
+    base = ctx.get("base_ref") or "dev"
+    if approved:
+        if merge is None:
+            return "Auto-approved by pr-triage."
+        if not merge.get("approved", True):
+            return (
+                f"GitHub refused pr-triage's approval ({cell(merge.get('error'))}). A person can approve and merge it."
+            )
+        if merge.get("merged"):
+            return f"Auto-approved and merged into `{base}` by pr-triage; no person was needed."
+        return f"Auto-approved, but GitHub did not merge it ({cell(merge.get('error'))}). A person can merge it."
+    if ctx.get("mode") != "auto-approve":
+        return "Advisory mode: a person approves and merges."
+    outcome = decision["decision"]
+    if outcome == "approvable":
+        blocker = decision.get("auto_blocker") or "it is not eligible"
+        return f"Auto-approve mode: this PR waits for a person because {blocker}."
+    if outcome == "changes_requested":
+        return "Auto-approve mode: fix the findings and push; the new commit is reviewed again."
+    return "Auto-approve mode: a person reviews this PR."
+
+
+def approval(state: dict[str, Any]) -> str:
+    """The body of pr-triage's approving review."""
+    ctx = state["ctx"]
+    if (state.get("policy") or {}).get("category") == "code":
+        where = "in CI and on the AWS preview" if ctx.get("level") == "v3" else "in CI"
+        why = (
+            f"every check passed, the expected behavior ran and passed {where}, and the AI review found nothing to fix"
+        )
+    else:
+        why = "it changes only docs or tests, and every check passed"
+    return f"Approved by pr-triage for commit {ctx['sha'][:7]}: {why}."
 
 
 def _ai_section(state: dict[str, Any]) -> str:

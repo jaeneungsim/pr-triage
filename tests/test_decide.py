@@ -2,14 +2,26 @@ import copy
 
 from pr_triage import decide
 
+API = "jaeneungsim/demo-inventory-api"
+EVIDENCE = {
+    "test_relevance": {"verdict": "ok"},
+    "behavior_ci": {"passed": True, "items": [{"id": "B1", "type": "api", "ok": True}]},
+    "behavior_preview": {"items": [{"id": "B1", "type": "api", "ok": True}]},
+}
 
-def state(review=None, policy_hits=(), check_hits=(), category="code", fork=False, base="dev"):
+
+def state(review=None, policy_hits=(), check_hits=(), category="code", fork=False, base="dev", level="v3"):
     s = {
-        "ctx": {"fork": fork, "base_ref": base, "mode": "advisory"},
-        "policy": {"hits": list(policy_hits), "category": category},
+        "ctx": {"repo": API, "fork": fork, "base_ref": base, "mode": "advisory", "level": level},
+        "policy": {
+            "hits": list(policy_hits),
+            "category": category,
+            "ticket_repos": ["demo-inventory-api"],
+            "expected_types": ["api"],
+        },
     }
     if check_hits is not None:
-        s["checks"] = {"hits": list(check_hits)}
+        s["checks"] = {"hits": list(check_hits), **copy.deepcopy(EVIDENCE)}
     if review is not None:
         s["review"] = {"status": "ok", "result": review}
     return s
@@ -92,13 +104,46 @@ def test_cleaned_review_is_used(rules, good_review):
     assert decide.decide(s, rules, "advisory")["decision"] == "approvable"
 
 
-def test_auto_approve_only_for_docs_and_tests_into_dev(rules, good_review):
-    assert decide.decide(state(good_review, category="docs_only"), rules, "auto-approve")["auto_approve"]
-    assert not decide.decide(state(good_review), rules, "auto-approve")["auto_approve"]
-    assert not decide.decide(state(good_review, category="tests_only", fork=True), rules, "auto-approve")[
-        "auto_approve"
-    ]
-    assert not decide.decide(state(good_review, category="tests_only", base="main"), rules, "auto-approve")[
-        "auto_approve"
-    ]
-    assert not decide.decide(state(good_review, category="docs_only"), rules, "advisory")["auto_approve"]
+def auto(s, rules, mode="auto-approve"):
+    result = decide.decide(s, rules, mode)
+    return result["auto_approve"], result["auto_blocker"]
+
+
+def test_auto_approve_needs_the_mode_and_a_clean_dev_pr(rules, good_review):
+    assert auto(state(good_review, category="docs_only"), rules) == (True, None)
+    assert auto(state(good_review), rules) == (True, None)
+    assert auto(state(good_review), rules, mode="advisory") == (False, None)
+    assert auto(state(good_review, fork=True), rules) == (False, "it comes from a fork")
+    assert auto(state(good_review, base="main"), rules)[1].startswith("it targets main")
+
+
+def test_code_needs_executed_evidence(rules, good_review):
+    s = state(good_review, level="v1")
+    assert auto(s, rules) == (False, "v1 does not run the code")
+    s = state(good_review)
+    s["checks"]["test_relevance"] = {"verdict": "undetermined"}
+    assert auto(s, rules)[1] == "the new tests were not shown to fail on the old code"
+    s = state(good_review)
+    s["checks"]["behavior_ci"] = None
+    assert auto(s, rules)[1] == "the expected behavior did not run in CI"
+    s = state(good_review)
+    s["checks"]["behavior_preview"] = None
+    assert auto(s, rules)[1] == "the expected behavior did not run on the AWS preview"
+    s = state(good_review, level="v2")
+    s["checks"]["behavior_preview"] = None
+    assert auto(s, rules) == (True, None)
+
+
+def test_code_that_a_person_has_to_see_waits(rules, good_review):
+    s = state(good_review)
+    s["policy"]["ticket_repos"] = ["demo-inventory-api", "demo-inventory-web"]
+    assert auto(s, rules)[1] == "the ticket spans several repos, so a person merges the parts together"
+    s = state(good_review)
+    s["policy"]["expected_types"] = ["api", "ui"]
+    assert auto(s, rules)[1] == "the expected behavior has UI steps that a person has to look at"
+
+
+def test_only_approvable_prs_are_auto_approved(rules, good_review):
+    s = state(good_review, check_hits=[hit("behavior", "changes_requested")])
+    result = decide.decide(s, rules, "auto-approve")
+    assert result["decision"] == "changes_requested" and result["auto_approve"] is False

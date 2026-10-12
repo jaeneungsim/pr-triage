@@ -25,6 +25,8 @@ def test_clean_pr_passes(doc, rules):
     assert result["category"] == "code"
     assert result["coverage"]["missing"] == ["R2"]
     assert kinds(result) == ["coverage", "coverage"]  # R2 not covered yet, and no web PR yet
+    assert result["ticket_repos"] == ["demo-inventory-api", "demo-inventory-web"]
+    assert result["expected_types"] == ["api", "log"]
 
 
 def test_missing_ticket_key_and_file(doc, rules):

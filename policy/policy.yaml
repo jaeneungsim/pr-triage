@@ -56,10 +56,18 @@ ai:
   min_confidence: 0.8
   fork_label: ai-review-ok
 
+# Auto-approve mode (SSM config/mode). An approvable PR into a target branch is approved and
+# merged without a person when code can vouch for it (decide.auto_blocker):
+# - docs_only and tests_only PRs need nothing more;
+# - a code PR also needs its expected behavior to have run and passed: in CI from v2 and on
+#   the AWS preview at v3, with new tests that fail on the old code. Its ticket must live in
+#   this repo alone, and it must have no UI items, which a person has to look at.
+# Merging beyond dev stays with people.
 auto_approve:
-  categories: [docs_only, tests_only]
+  categories: [docs_only, tests_only, code]
   min_confidence: 0.8
   target_branches: [dev]
+  merge_method: squash   # bound to the reviewed commit; leave empty to approve without merging
 
 # Text aimed at the reviewer. Matching is a tripwire, not the defence: it can be evaded
 # by rewording. The defence is that the AI only suggests and code decides.

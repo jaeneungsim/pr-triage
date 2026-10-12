@@ -82,6 +82,22 @@ def test_summary(doc, good_review):
     assert "applies to commit aaaaaaa only" in body
 
 
+def test_auto_approve_lines(doc, good_review):
+    s = full_state(doc, good_review)
+    s["ctx"]["mode"] = "auto-approve"
+    merged = render.summary(s, doc, approved=True, merge={"merged": True, "sha": "b" * 40, "error": None})
+    assert "Auto-approved and merged into `dev` by pr-triage; no person was needed." in merged
+    no_review = render.summary(s, doc, approved=True, merge={"approved": False, "merged": False, "error": "403"})
+    assert "GitHub refused pr-triage's approval (403). A person can approve and merge it." in no_review
+    refused = render.summary(s, doc, approved=True, merge={"merged": False, "error": "GitHub API 405: x"})
+    assert "GitHub did not merge it (GitHub API 405: x). A person can merge it." in refused
+    s["decision"]["auto_blocker"] = "the ticket spans several repos, so a person merges the parts together"
+    waiting = render.summary(s, doc)
+    assert "waits for a person because the ticket spans several repos" in waiting
+    assert render.approval(s).startswith("Approved by pr-triage for commit aaaaaaa: every check passed")
+    assert "in CI and on the AWS preview" in render.approval(s)
+
+
 def test_summary_without_ai(doc):
     state = {
         "request": {"reason": "opened"},

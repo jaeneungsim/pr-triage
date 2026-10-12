@@ -8,7 +8,7 @@ Every PR ends in one of three results, bound to the commit that was reviewed:
 
 | Result | Meaning | Check run |
 |---|---|---|
-| **Approvable** | Every check passed and the AI review found nothing to fix. A person still approves. | `success` |
+| **Approvable** | Every check passed and the AI review found nothing to fix. A person approves, or in auto-approve mode pr-triage approves and merges it into `dev` when it can vouch for it. | `success` |
 | **Changes requested** | The author has something concrete to fix first. | `failure` (blocks merge) |
 | **Needs human review** | Security-sensitive, suspicious, or something the system cannot judge. | `neutral` |
 
@@ -38,8 +38,20 @@ GitHub ─webhook─▶ API Gateway ─▶ ingest Lambda ─▶ SQS ─▶ dispa
 
 Decision rules (`src/pr_triage/decide.py`): a security-related finding (sensitive path, prompt
 injection) means a person reviews; otherwise anything the author can fix comes first; any other
-doubt goes to a person; only a clean run is approvable. Auto-approve mode can approve docs-only and
-tests-only PRs into `dev`; advisory mode, the default, never approves.
+doubt goes to a person; only a clean run is approvable.
+
+Advisory mode, the default, never approves: a person approves and merges. Auto-approve mode
+(`/pr-triage/config/mode`) approves an approvable PR into `dev` and merges it, with no person,
+only when code can vouch for it (`decide.auto_blocker`):
+
+- docs-only and tests-only PRs;
+- code PRs whose expected behavior actually ran and passed, in CI from v2 and on the AWS preview
+  at v3, whose new tests fail on the old code, whose ticket lives in this repo alone, and which
+  have no UI items for a person to look at.
+
+The merge names the reviewed commit, so GitHub refuses it if a newer commit arrived. Everything
+else waits for a person, and promotion beyond `dev` stays with people. The GitHub App needs
+contents write access for this; its approval counts as the one required review.
 
 ## Levels
 

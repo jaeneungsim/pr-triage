@@ -280,6 +280,8 @@ through branch protection, while "changes requested" blocks the merge until a ne
 ## 9. Branch protection on `dev` (demo repos)
 
 - Required status checks: `ci` and `pr-triage`.
-- One approving review; stale approvals are dismissed when new commits are pushed.
+- One approving review; stale approvals are dismissed when new commits are pushed. In
+  auto-approve mode pr-triage's own review (the GitHub App, with contents write) is that approval
+  for the PRs it merges; every other PR still needs a person's.
 - Admins may bypass (the owner is the only human in the demo).
 - Squash merge only; the squash commit uses the PR title and description.
